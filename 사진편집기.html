@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>흐기네 매직 스튜디오 🪄</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        /* 디자인 변수 */
+        :root {
+            --bg-color: #FDFBF7;
+            --panel-color: #FFFFFF;
+            --text-primary: #4E342E;
+            --text-secondary: #8D6E63;
+            --border-color: #EFEBE9;
+            --accent-orange: #FFAB40;
+            --accent-orange-dark: #FF9100;
+            --accent-green: #66BB6A;
+            --accent-green-dark: #43A047;
+            --radius-btn: 25px;
+            --radius-card: 24px;
+            --shadow-soft: 0 10px 30px rgba(78, 52, 46, 0.08);
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0; padding: 20px; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* [숨김] 기본 파일 버튼 */
+        #mainInput {
+            display: none !important;
+            opacity: 0;
+            position: absolute;
+            z-index: -1;
+        }
+
+        /* 레이아웃 */
+        .app-container { display: flex; gap: 30px; max-width: 1200px; margin: 0 auto; min-height: 90vh; }
+        .sidebar-controls {
+            flex: 0 0 360px; background: var(--panel-color); padding: 35px;
+            border-radius: var(--radius-card); box-shadow: var(--shadow-soft); height: fit-content; border: 2px solid #FFF;
+        }
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+
+        h1 { font-family: 'Jua', sans-serif; margin: 0 0 5px 0; font-size: 1.8rem; display: flex; align-items: center; gap: 10px; }
+        h1 i { color: var(--accent-orange); }
+        
+        /* [수정됨] 버전 표기 삭제 */
+        .subtitle { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 30px; }
+
+        .mode-switch { display: flex; gap: 10px; margin-bottom: 30px; background: #F5F5F5; padding: 6px; border-radius: 30px; }
+        .mode-btn { flex: 1; padding: 12px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-weight: 700; border-radius: 25px; transition: 0.2s; font-family: 'Pretendard', sans-serif; }
+        .mode-btn.active { background: #fff; color: var(--accent-orange-dark); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
+        .control-group { margin-bottom: 25px; }
+        label.section-label { display: block; margin-bottom: 12px; font-weight: 700; color: var(--text-primary); font-size: 1rem; }
+        input[type="text"] { width: 100%; padding: 16px; border: 2px solid var(--border-color); background: #FAFAFA; color: var(--text-primary); border-radius: 16px; box-sizing: border-box; font-size: 1rem; font-weight: 500; transition: 0.3s; }
+        input[type="text"]:focus { border-color: var(--accent-orange); background: #fff; outline: none; box-shadow: 0 0 0 4px rgba(255, 171, 64, 0.1); }
+
+        /* 업로드 버튼 */
+        .drop-zone {
+            border: 3px dashed #D7CCC8; background: #FFFBF5; border-radius: var(--radius-card);
+            text-align: center; cursor: pointer; transition: 0.3s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px 20px; min-height: 180px; box-sizing: border-box; gap: 15px;
+        }
+        .drop-zone:hover { border-color: var(--accent-orange); background: #FFF3E0; transform: scale(1.02); }
+        .drop-zone i { font-size: 50px; color: #D7CCC8; transition: 0.3s; }
+        .drop-zone:hover i { color: var(--accent-orange); transform: rotate(-10deg); }
+        .drop-zone p { margin: 0; color: var(--text-secondary); font-weight: 600; font-size: 1rem; }
+        
+        .drop-zone.active { border-color: var(--accent-green); background: #E8F5E9; }
+        .drop-zone.active i { color: var(--accent-green); }
+        .drop-zone.active p { color: var(--accent-green-dark); }
+
+        .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; background: #fff; padding: 20px; border-radius: 20px; box-shadow: var(--shadow-soft); }
+        .btn-zip { background: var(--accent-green); color: white; padding: 14px 30px; border: none; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; border-radius: 30px; font-size: 1rem; box-shadow: 0 6px 0 var(--accent-green-dark); transition: 0.1s; transform: translateY(0); }
+        .btn-zip:hover { filter: brightness(1.1); }
+        .btn-zip:active { transform: translateY(6px); box-shadow: 0 0 0 var(--accent-green-dark); }
+        .btn-zip:disabled { background: #E0E0E0; color: #9E9E9E; box-shadow: none; cursor: not-allowed; transform: none; }
+        .btn-reset { background: #EFEBE9; color: var(--text-secondary); border: none; padding: 12px 20px; border-radius: 20px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-reset:hover { background: #D7CCC8; }
+
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
+        .result-card { background: #fff; border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-soft); transition: 0.3s; border: 2px solid transparent; }
+        .result-card:hover { transform: translateY(-8px); border-color: var(--accent-orange); }
+        .card-thumb-wrapper { width: 100%; aspect-ratio: 1/1; background: #FAFAFA; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #eee; }
+        .card-thumb { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px; }
+        .card-body { padding: 15px; text-align: center;}
+        .filename { font-size: 0.9rem; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        @media (max-width: 900px) {
+            .app-container { flex-direction: column; }
+            .sidebar-controls { width: auto; padding: 25px; }
+            .results-header { flex-direction: column; align-items: stretch; text-align: center;}
+            .results-header > div:last-child { display: flex; gap: 10px; margin-top: 15px; }
+            .btn-zip { flex: 2; justify-content: center; }
+            .btn-reset { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <aside class="sidebar-controls">
+        <h1><i class="ph-fill ph-plant"></i> 흐기네 스튜디오</h1>
+        <p class="subtitle">말랑말랑한 사진 편집소</p>
+
+        <div class="mode-switch">
+            <button class="mode-btn active" onclick="switchMode('basic')">📸 서명하기</button>
+            <button class="mode-btn" onclick="switchMode('mockup')">🎨 감성목업</button>
+        </div>
+
+        <div id="basicControls">
+            <div class="control-group">
+                <label class="section-label">서명 텍스트</label>
+                <input type="text" id="signText" value="© Photo by Heugi" placeholder="서명 입력...">
+            </div>
+        </div>
+
+        <div id="mockupControls" style="display:none;">
+            <div class="control-group">
+                <label class="section-label" style="color:var(--accent-orange);">✨ 감성 목업 모드</label>
+                <div style="font-size:0.9rem; color:var(--text-secondary); line-height:1.6; background:#FFF8E1; padding:15px; border-radius:16px;">
+                    사진 색감을 분석해서<br><b>가장 예쁜 배경색</b>을 찾아줍니다.
+                </div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="section-label">사진 가져오기</label>
+            <label for="mainInput" class="drop-zone" id="mainDropZone">
+                <i class="ph-duotone ph-image"></i>
+                <p id="dropZoneText">여기를 눌러서<br>사진을 추가해주세요!</p>
+            </label>
+            <input type="file" id="mainInput" accept="image/*" multiple>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="results-header">
+            <div id="statusMsg" style="color:var(--text-secondary); font-weight:600;">👋 환영해요! 사진을 올려보세요.</div>
+            <div>
+                <button class="btn-zip" id="zipDownloadBtn" onclick="downloadAllZip()" disabled>
+                    <i class="ph-bold ph-download-simple"></i> 모두 저장하기
+                </button>
+                <button class="btn-reset" onclick="clearAll()">비우기</button>
+            </div>
+        </div>
+        <div id="resultsGrid" class="results-grid"></div>
+    </main>
+</div>
+
+<script>
+    let currentMode = 'basic';
+    let processedFiles = [];
+    const resultsGrid = document.getElementById('resultsGrid');
+    const statusMsg = document.getElementById('statusMsg');
+    const zipBtn = document.getElementById('zipDownloadBtn');
+    const mainInput = document.getElementById('mainInput');
+    const dropZone = document.getElementById('mainDropZone');
+    const dropZoneText = document.getElementById('dropZoneText');
+
+    function switchMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        document.getElementById('basicControls').style.display = mode === 'basic' ? 'block' : 'none';
+        document.getElementById('mockupControls').style.display = mode === 'mockup' ? 'block' : 'none';
+    }
+
+    ['dragover', 'dragenter'].forEach(evt => dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent-orange)'; dropZone.style.background = '#FFF3E0'; }));
+    ['dragleave', 'drop'].forEach(evt => dropZone.addEventListener(evt, (e) => { e.preventDefault(); dropZone.style.borderColor = '#D7CCC8'; dropZone.style.background = '#FFFBF5'; }));
+    
+    dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+    mainInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    function handleFiles(files) {
+        if (files.length === 0) return;
+
+        dropZone.classList.add('active');
+        dropZoneText.innerHTML = `<b>${files.length}장</b>의 사진이<br>선택되었습니다!`;
+
+        statusMsg.innerHTML = `<span style="color:var(--accent-orange)">🏃 흐기가 열심히 작업 중... (${files.length}장)</span>`;
+        Array.from(files).forEach(file => {
+            if(!file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    if (currentMode === 'basic') processBasic(img, file.name);
+                    else processMockup(img, file.name);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function processBasic(img, fileName) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const maxW = 1200;
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = h * (maxW / w); w = maxW; }
+        canvas.width = w; canvas.height = h;
+        ctx.drawImage(img, 0, 0, w, h);
+        const text = document.getElementById('signText').value;
+        const fontSize = w * 0.03;
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+        ctx.shadowColor = "rgba(0,0,0,0.7)"; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fillText(text, w - (w*0.02), h - (w*0.02));
+        finalizeImage(canvas, fileName, 'signed');
+    }
+
+    function processMockup(img, fileName) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const tempC = document.createElement('canvas');
+        const tempCtx = tempC.getContext('2d');
+        tempC.width = 50; tempC.height = 50;
+        tempCtx.drawImage(img, 0, 0, 50, 50);
+        const pixel = tempCtx.getImageData(25, 25, 1, 1).data;
+        const r = pixel[0], g = pixel[1], b = pixel[2];
+        
+        const canvasSize = 1080;
+        canvas.width = canvasSize; canvas.height = canvasSize;
+        const grad = ctx.createLinearGradient(0, 0, canvasSize, canvasSize);
+        grad.addColorStop(0, `rgb(${r+50}, ${g+50}, ${b+50})`);
+        grad.addColorStop(1, `rgb(${r-50}, ${g-50}, ${b-50})`);
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+        const padding = 120;
+        const scale = Math.min((canvasSize - padding*2) / img.width, (canvasSize - padding*2) / img.height);
+        const drawW = img.width * scale; const drawH = img.height * scale;
+        const drawX = (canvasSize - drawW) / 2; const drawY = (canvasSize - drawH) / 2;
+
+        ctx.shadowColor = "rgba(0, 0, 0, 0.5)"; ctx.shadowBlur = 60; ctx.shadowOffsetY = 40;
+        ctx.fillStyle = "white";
+        ctx.fillRect(drawX - 15, drawY - 15, drawW + 30, drawH + 30);
+        ctx.shadowColor = "transparent";
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        finalizeImage(canvas, fileName, 'mockup');
+    }
+
+    function finalizeImage(canvas, fileName, prefix) {
+        canvas.toBlob((blob) => {
+            const newFileName = `${prefix}_${fileName.replace(/\.[^/.]+$/, "")}.png`;
+            processedFiles.push({ name: newFileName, blob: blob });
+            const url = URL.createObjectURL(blob);
+            const div = document.createElement('div');
+            div.className = 'result-card';
+            div.innerHTML = `<div class="card-thumb-wrapper"><img src="${url}" class="card-thumb"></div><div class="card-body"><div class="filename">${newFileName}</div></div>`;
+            resultsGrid.appendChild(div);
+            statusMsg.innerText = `✨ 짠! ${processedFiles.length}장 완료`;
+            zipBtn.disabled = false;
+        }, 'image/png');
+    }
+
+    // [수정됨] 다운로드 함수 강화 (오류 처리 및 안전장치 추가)
+    function downloadAllZip() {
+        if (processedFiles.length === 0) {
+            alert("저장할 사진이 없어요!");
+            return;
+        }
+
+        // JSZip 라이브러리 로드 확인
+        if (typeof JSZip === 'undefined') {
+            alert("오류: 압축 도구(JSZip)가 로딩되지 않았습니다. 인터넷 연결을 확인하고 새로고침 해주세요.");
+            return;
+        }
+
+        statusMsg.innerHTML = "📦 선물 포장 중... (압축)";
+        const zip = new JSZip();
+        const folder = zip.folder("Heugi_Studio_Results");
+        
+        processedFiles.forEach(file => { folder.file(file.name, file.blob); });
+
+        zip.generateAsync({type:"blob"}).then(function(content) {
+            // [안전장치] FileSaver(saveAs)가 없으면 수동으로 다운로드 링크 클릭
+            if (typeof saveAs !== 'undefined') {
+                saveAs(content, "Heugi_Magic_Photos.zip");
+            } else {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = "Heugi_Magic_Photos.zip";
+                link.click();
+            }
+            statusMsg.innerText = "🎉 다운로드 완료!";
+        }).catch(function(err) {
+            console.error(err);
+            statusMsg.innerText = "❌ 다운로드 실패";
+            alert("압축 과정에서 오류가 났어요: " + err.message);
+        });
+    }
+
+    function clearAll() {
+        resultsGrid.innerHTML = ''; 
+        processedFiles = []; 
+        zipBtn.disabled = true; 
+        statusMsg.innerText = "👋 환영해요! 사진을 올려보세요.";
+        mainInput.value = '';
+        dropZone.classList.remove('active');
+        dropZoneText.innerHTML = "여기를 눌러서<br>사진을 추가해주세요!";
+    }
+</script>
+</body>
+</html>
